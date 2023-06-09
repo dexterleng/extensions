@@ -18,7 +18,7 @@ const loadDatabase = async (path: string) => {
   return new SQL.Database(fileContents);
 };
 
-const useSql = <Result>(path: string, query: string) => {
+export const useSql = <Result>(path: string, query: string) => {
   const databaseRef = useRef<Database>();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
