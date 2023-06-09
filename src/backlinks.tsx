@@ -23,14 +23,30 @@ const loadDatabase = async (path: string) => {
 const NOTES_DB = resolve(homedir(), "Library/Group Containers/group.com.apple.notes/NoteStore.sqlite");
 
 export default function Command() {
+  return <Backlinks />
+}
+
+type BacklinksProps = {
+  noteId?: string;
+};
+
+export function Backlinks({ noteId }: BacklinksProps) {
   const databaseRef = useRef<Database>();
-  const [backlinks, setBacklinks] = useState<NoteItem[]>()
+  const [backlinks, setBacklinks] = useState<NoteItem[]>();
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error>();
 
   useEffect(() => {
     (async function () {
-      const noteId = await currentNoteId();
+      const currNoteId = noteId ?? await currentNoteId();
+
+      const regex = /x-coredata:\/\/[a-zA-Z0-9-]+\/ICNote\/p(\d+)/;
+      const match = currNoteId.match(regex);
+      if (!(match && match[1])) {
+        setError(new Error("Something went wrong."))
+        return;
+      }
+      const zPK = match[1];
 
       if (!databaseRef.current) {
         try {
@@ -49,9 +65,9 @@ export default function Command() {
         const noteUuidStatement = databaseRef.current.prepare(`
           SELECT ZIDENTIFIER
           FROM ZICCLOUDSYNCINGOBJECT
-          WHERE Z_PK = :noteId
+          WHERE Z_PK = :zPK
         `)
-        const noteUuidResult = noteUuidStatement.getAsObject({ ':noteId': noteId })
+        const noteUuidResult = noteUuidStatement.getAsObject({ ':zPK': zPK })
         noteUuidStatement.free();
 
         const noteUuid = noteUuidResult.ZIDENTIFIER as string;
@@ -143,8 +159,8 @@ export default function Command() {
   return <Notes isLoading={isLoading} error={error} noteItems={backlinks} />
 }
 
-async function currentNoteId(): Promise<string | null> {
-  const coreDataLink = await runAppleScript(`tell application "Notes"
+async function currentNoteId(): Promise<string> {
+  return await runAppleScript(`tell application "Notes"
     if (count of windows) is equal to 1 or (name of window 1 as string is equal to "Notes") then
       set selectedNote to (get selection as record)
       set noteId to «class seld» of selectedNote
@@ -155,11 +171,4 @@ async function currentNoteId(): Promise<string | null> {
     return noteId
     end tell`
   );
-
-  const regex = /x-coredata:\/\/[a-zA-Z0-9-]+\/ICNote\/p(\d+)/;
-  const match = coreDataLink.match(regex);
-  if (match && match[1]) {
-    return match[1];
-  }
-  return null;
 }

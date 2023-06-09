@@ -15,6 +15,7 @@ import { runAppleScript } from "run-applescript";
 import { testPermissionErrorType, PermissionErrorScreen } from "./errors";
 import { NoteItem } from "./types";
 import { useState } from "react";
+import { Backlinks } from "./backlinks";
 
 interface Preferences {
   accounts: boolean;
@@ -211,6 +212,13 @@ export default function Notes({ isLoading, error, noteItems }: NotesProps) {
                       }}
                       shortcut={{ modifiers: ["cmd"], key: "d" }}
                     />
+                    <Action.Push
+                      title="View Backlinks"
+                      icon={Icon.Hashtag}
+                      target={<Backlinks noteId={note.id}/>}
+                      shortcut={{ modifiers: ["cmd"], key: "b" }}
+                    />
+
                     <ActionPanel.Section title="Copy Actions">
                       <Action.CopyToClipboard
                         title="Copy Note URL"
